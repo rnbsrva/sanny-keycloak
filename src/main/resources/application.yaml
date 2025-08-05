@@ -1,1 +1,29 @@
-spring.application.name=sanny-keycloak
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/keycloak_db}
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: org.postgresql.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:0000}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI:http://localhost:9090/realms/realm-demo}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:9090/realms/realm-demo/protocol/openid-connect/certs}
+  application:
+    name: sanny-keycloak
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+
+jwt:
+  auth:
+    converter:
+      resource-id: demo
+      principle-attribute: preferred_username
+
+server:
+  port: 8081

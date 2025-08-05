@@ -3,6 +3,8 @@ version: '3'
 services:
   postgres:
     image: postgres
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -12,9 +14,9 @@ services:
     networks:
       - keycloak-network
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.2
+    image: quay.io/keycloak/keycloak:25.0.5
     ports:
-      - 8180:8080
+      - 9090:8080
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
@@ -22,18 +24,36 @@ services:
       DB_SCHEMA: public
       DB_USER: keycloakuser
       DB_PASSWORD: keycloakpass
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: adminpass
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
     networks:
       - keycloak-network
     depends_on:
       - postgres
     command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+  spring-app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/keycloakdb
+      SPRING_DATASOURCE_USERNAME: keycloakuser
+      SPRING_DATASOURCE_PASSWORD: keycloakpass
+      ISSUER_URI: http://localhost:9090/realms/realm-demo
+      JWK_SET_URI: http://keycloak:8080/realms/realm-demo/protocol/openid-connect/certs
+    depends_on:
+      - postgres
+      - keycloak
+    networks:
+      - keycloak-network
 
 networks:
   keycloak-network:
     driver: bridge
 
 volumes:
+  keycloak_data:
   postgres_data:
     driver: local
