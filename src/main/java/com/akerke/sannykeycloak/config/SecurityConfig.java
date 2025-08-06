@@ -1,5 +1,6 @@
-package com.akerke.sannykeycloak;
+package com.akerke.sannykeycloak.config;
 
+import com.akerke.sannykeycloak.security.JwtConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,7 @@ public class SecurityConfig{
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize)-> authorize
+                        .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(
                         (oauth2)-> oauth2.jwt(

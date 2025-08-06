@@ -1,0 +1,81 @@
+package com.akerke.sannykeycloak.controller;
+
+import com.akerke.sannykeycloak.dto.ChangePasswordRequest;
+import com.akerke.sannykeycloak.dto.RegisterRequest;
+import jakarta.ws.rs.core.Response;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/user")
+public class UserController {
+
+    private final Keycloak keycloak;
+    private final String realm = "realm-demo";
+
+    public UserController(Keycloak keycloak) {
+        this.keycloak = keycloak;
+    }
+
+
+    @PostMapping("/register")
+    @PreAuthorize("hasRole('role_admin')")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        UserRepresentation user = new UserRepresentation();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setEmailVerified(true);
+        user.setEnabled(true);
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(request.getPassword());
+        credential.setTemporary(false);
+
+        user.setCredentials(List.of(credential));
+
+        try {
+            Response response = keycloak.realm(realm).users().create(user);
+            if (response.getStatus() == 201) {
+                return ResponseEntity.ok("User registered");
+            } else {
+                return ResponseEntity.status(response.getStatus()).body("Registration failed");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Exception: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        List<UserRepresentation> users = keycloak.realm(realm)
+                .users()
+                .search(request.getUsername());
+
+        if (users.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        String userId = users.get(0).getId();
+
+        CredentialRepresentation newPassword = new CredentialRepresentation();
+        newPassword.setType(CredentialRepresentation.PASSWORD);
+        newPassword.setValue(request.getNewPassword());
+        newPassword.setTemporary(false);
+
+        keycloak.realm(realm).users().get(userId).resetPassword(newPassword);
+
+        return ResponseEntity.ok("Password updated");
+    }
+
+}

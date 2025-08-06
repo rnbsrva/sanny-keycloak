@@ -1,4 +1,4 @@
-package com.akerke.sannykeycloak;
+package com.akerke.sannykeycloak.security;
 
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
